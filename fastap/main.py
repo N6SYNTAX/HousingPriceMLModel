@@ -1,77 +1,53 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
-from pydantic import BaseModel
-from fastapi.responses import JSONResponse
-from fastapi import BackgroundTasks
-import time
-
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+import pandas as pd
+from Model import MLModel, predict_price  # Import your functions from Model.py
 
 app = FastAPI()
 
-class Item(BaseModel):
-    name: str
-    price: float
-    is_offer: bool = None
+# Add CORS middleware to allow requests from the frontend (React app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # URL of React frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    def get_db():
-        return {"db": "Simulated database connection"}
-     
-    @app.middleware("http")
-    async def log_requests(request: Request, call_next):
-        start_time = time.time()
-        response = await call_next(request)
-        process_time = time.time() - start_time
-        print(f"Request: {request.url} - Duration: {process_time} seconds")
-        return response
-     
+# Initialize the ML model on startup
+MLModel()
 
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException):
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail, "error": "An error occurred"}
-     )
-    
-    @app.get("/items/{item_id}")
-    def get_item(item_id: int, db=Depends(get_db)):
-        if item_id not in [1, 2, 3]:  # Simulate item check
-            raise HTTPException(status_code=404, detail="Item not found")
-        return {"item_id": item_id, "db_connection": db["db"]}	
-    
-    @app.post("/items/")
-    def create_item(item: Item, db=Depends(get_db)):
-        return {"item": item, "db_connection": db["db"]}
-    
-    @app.put("/items/{item_id}")
-    def update_item(item_id: int, item: Item, db=Depends(get_db)):
-        if item_id not in [1, 2, 3]:
-            raise HTTPException(status_code=404, detail="Item not found")
-        return {"item_id": item_id, "updated_item": item, "db_connection": db["db"]}
-    
-    @app.delete("/items/{item_id}")
-    def delete_item(item_id: int, db=Depends(get_db)):
-        if item_id not in [1, 2, 3]:
-            raise HTTPException(status_code=404, detail="Item not found")
-        return {"detail": "Item deleted", "item_id": item_id, "db_connection": db["db"]}
-    
-    @app.get("/info/")
-    def get_info():
-        headers = {"X-Info-Version": "1.0", "X-Student-Task": "Create Custom Path"}
-        return JSONResponse(content={"message": "Custom path created successfully!"}, headers=headers)
+# Define the data structure for POST request input
+class PricePredictionInput(BaseModel):
+    bedrooms: int = Field(..., ge=1, le=10, description="Number of bedrooms")  # Validate between 1 and 10 bedrooms
+    landsize: float = Field(..., gt=0, description="Land size in square meters")  # Must be positive
 
-    @app.get("/items/{item_id}/with-discount/")
-    def get_item_with_discount(item_id: int, discount: float = None, db=Depends(get_db)):
-        if item_id not in [1, 2, 3]:
-         raise HTTPException(status_code=404, detail="Item not found")
-        item = {"item_id": item_id, "price": 100.0}  # Simulated item with price
-        if discount:
-         item["discounted_price"] = item["price"] * (1 - discount)
-        return {"item": item, "db_connection": db["db"]}
-    
-    def background_task(item_id: int):
-        time.sleep(5)  # Simulate long task
-        print(f"Background task completed for item {item_id}")
+# Health check route
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the House Price Prediction API"}
 
-    @app.post("/items/{item_id}/background-task/")
-    def run_background_task(item_id: int, background_tasks: BackgroundTasks, db=Depends(get_db)):
-        background_tasks.add_task(background_task, item_id)
-        return {"message": "Background task started", "item_id": item_id, "db_connection": db["db"]}
+# GET endpoint for a simple prediction route
+@app.get("/predict/{bedrooms}/{landsize}")
+async def predict_price_get(bedrooms: int, landsize: float):
+    try:
+        # Make prediction using the imported predict_price function
+        predicted_price = predict_price(bedrooms, landsize)
+        return {"predicted_price": round(predicted_price, 2)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+# POST endpoint for predicting house prices
+@app.post("/predict")
+async def predict_price_post(input: PricePredictionInput):
+    try:
+        # Call the prediction function with user input data
+        predicted_price = predict_price(input.bedrooms, input.landsize)
+        return {"predicted_price": round(predicted_price, 2)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
