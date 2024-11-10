@@ -63,11 +63,11 @@ def predict_price(bedrooms, landsize):
 
 MLModel()
 
-# Example prediction
-print("Predicted price:", predict_price(1, 150))
+# # Example prediction
+# print("Predicted price:", predict_price(1, 150))
 
-bed = int(input("Enter Num Of Bedrooms: "))
-land = int(input("Enter Num Of Bedrooms: "))
+# bed = int(input("Enter Num Of Bedrooms: "))
+# land = int(input("Enter Num Of Bedrooms: "))
 
-predict_price(bed,land)
+# predict_price(bed,land)
 
