@@ -26,7 +26,7 @@ class PricePredictionInput(BaseModel):
 # Health check route
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the House Price Prediction API"}
+    return {"message": "Hi, This is the API for our housing price predictor"}
 
 # GET endpoint for a simple prediction route
 @app.get("/predict/{bedrooms}/{landsize}")
