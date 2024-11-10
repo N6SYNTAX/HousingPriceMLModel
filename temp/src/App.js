@@ -5,11 +5,11 @@ import UserInputForm from './UserInputForm';
 import DataVisualization from './DataVisualization';
 
 function App() {
-  const [activeTab, setActiveTab] = useState(0); // Start with the "User Input" tab
-  const [predictionData, setPredictionData] = useState([]); // Hold prediction data for visualization
-  const [darkMode, setDarkMode] = useState(false); // Toggle for dark/light mode
+  const [activeTab, setActiveTab] = useState(0);
+  const [predictionData, setPredictionData] = useState([]); // Hold prediction data
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Theme setup for light and dark modes with a gray background in dark mode
+  // Theme for light and dark modes
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
@@ -23,12 +23,11 @@ function App() {
     setActiveTab(newValue);
   };
 
-  // Capture prediction data and update state
+  // Update prediction data from UserInputForm
   const handlePrediction = (data) => {
-    setPredictionData(data.predictions);
+    setPredictionData(data); // Expecting an array of prediction objects
   };
 
-  // Toggle theme between light and dark
   const handleThemeToggle = () => {
     setDarkMode(!darkMode);
   };
@@ -43,35 +42,27 @@ function App() {
         }}
       >
         <Container maxWidth="md">
-          {/* App Bar with Tabs */}
           <AppBar position="static">
             <Tabs value={activeTab} onChange={handleTabChange} centered>
               <Tab label="User Input" />
               <Tab label="Data Visualization" />
             </Tabs>
           </AppBar>
-
-          {/* Dark Mode Toggle */}
           <Box sx={{ display: 'flex', justifyContent: 'center', padding: 2 }}>
             <FormControlLabel
               control={<Switch checked={darkMode} onChange={handleThemeToggle} />}
               label={darkMode ? "Dark Mode" : "Light Mode"}
             />
           </Box>
-
-          {/* Tab Content */}
           <Box sx={{ padding: 3 }}>
-            {/* User Input Tab */}
             {activeTab === 0 && (
               <Box>
                 <Typography variant="h4" align="center" gutterBottom>
                   AI Prediction Application
                 </Typography>
-                <UserInputForm onPrediction={handlePrediction} />
+                <UserInputForm onPredict={handlePrediction} />
               </Box>
             )}
-
-            {/* Data Visualization Tab */}
             {activeTab === 1 && (
               <Box>
                 <Typography variant="h4" align="center" gutterBottom>

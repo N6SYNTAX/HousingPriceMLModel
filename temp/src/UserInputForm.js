@@ -1,74 +1,56 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography } from '@mui/material';
+import { Button, TextField, Box, Typography } from '@mui/material';
 
-function UserInputForm() {
-    const [bedrooms, setBedrooms] = useState("");
-    const [landsize, setLandsize] = useState("");
-    const [predictedPrice, setPredictedPrice] = useState(null);
-    const [error, setError] = useState(null);
+const UserInputForm = ({ onPredict }) => {
+    const [bedrooms, setBedrooms] = useState('');
+    const [landsize, setLandsize] = useState('');
+    const [predictedPrice, setPredictedPrice] = useState(null); // New state for predicted price
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handlePredict = () => {
+        // Calculate a mock predicted price
+        const price = parseFloat(bedrooms) * 100000 + parseFloat(landsize) * 500;
+        setPredictedPrice(price);
 
-        try {
-            const response = await fetch("http://127.0.0.1:8000/predict", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    bedrooms: parseInt(bedrooms),
-                    landsize: parseFloat(landsize),
-                }),
-            });
+        // Generate mock data for visualization
+        const mockPredictionData = [
+            { x: parseFloat(landsize), y: price },
+            { x: parseFloat(landsize) * 1.1, y: price * 1.05 },
+        ];
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch prediction");
-            }
-
-            const data = await response.json();
-            setPredictedPrice(data.predicted_price);
-            setError(null);
-        } catch (err) {
-            setError("An error occurred while fetching the prediction.");
-            setPredictedPrice(null);
-        }
+        // Pass data to App component for visualization
+        onPredict(mockPredictionData);
     };
 
-    const handleBedroomsChange = (e) => setBedrooms(e.target.value);
-    const handleLandsizeChange = (e) => setLandsize(e.target.value);
-
     return (
-        <form onSubmit={handleSubmit} style={{ padding: '1rem', maxWidth: '400px' }}>
-            <Typography variant="h6">Enter Features</Typography>
+        <Box>
             <TextField
                 label="Number of Bedrooms"
                 variant="outlined"
-                value={bedrooms}
-                onChange={handleBedroomsChange}
-                required
                 fullWidth
                 margin="normal"
+                value={bedrooms}
+                onChange={(e) => setBedrooms(e.target.value)}
             />
             <TextField
-                label="Land Size (m2)"
+                label="Landsize (sqm)"
                 variant="outlined"
-                value={landsize}
-                onChange={handleLandsizeChange}
-                required
                 fullWidth
                 margin="normal"
+                value={landsize}
+                onChange={(e) => setLandsize(e.target.value)}
             />
-            {error && <Typography color="error">{error}</Typography>}
+            <Button variant="contained" color="primary" onClick={handlePredict} sx={{ mt: 2 }}>
+                Predict
+            </Button>
+
+            {/* Display the predicted price */}
             {predictedPrice !== null && (
-                <Typography variant="h6" color="primary">
-                    Predicted Price: ${predictedPrice}
+                <Typography variant="h6" color="textSecondary" align="center" sx={{ mt: 2 }}>
+                    Predicted Price: ${predictedPrice.toLocaleString()}
                 </Typography>
             )}
-            <Button type="submit" variant="contained" color="primary" fullWidth>Submit</Button>
-        </form>
+        </Box>
     );
-}
+};
 
 export default UserInputForm;
-

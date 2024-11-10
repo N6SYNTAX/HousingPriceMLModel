@@ -1,111 +1,76 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import Plot from 'react-plotly.js';
+import React from 'react';
+import Plot from 'react-plotly.js';
 
-// const DataVisualization = () => {
-//     const [clusterData, setClusterData] = useState([]);
-//     const [loading, setLoading] = useState(true);
-//     const [error, setError] = useState(null);
+const DataVisualization = ({ predictionData }) => {
+    // Extract data for the scatter plots
+    const landsizeValues = predictionData.map(point => point.x); // Landsize values
+    const priceValues = predictionData.map(point => point.y); // Predicted Price values
+    const bedroomCounts = predictionData.map((_, index) => index + 1); // Mock Bedroom Count
 
-//     useEffect(() => {
-//         // Fetch data from the /visualize/clusters endpoint
-//         const fetchClusterData = async () => {
-//             try {
-//                 const response = await axios.get('http://localhost:8000/visualize/clusters');
-//                 console.log("Fetched Cluster Data:", response.data.data);  // Log full response data
+    // Calculate linear regression line for Landsize vs Predicted Price
+    const calcRegressionLine = (x, y) => {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.map((xi, i) => xi * y[i]).reduce((a, b) => a + b, 0);
+        const sumX2 = x.map(xi => xi ** 2).reduce((a, b) => a + b, 0);
 
-//                 if (response.data && response.data.data && Array.isArray(response.data.data)) {
-//                     setClusterData(response.data.data);
-//                     console.log("Cluster data set successfully:", response.data.data);
-//                 } else {
-//                     console.error("Unexpected data format:", response.data);
-//                     setError("Data format error: Expected an array.");
-//                 }
-//                 setLoading(false);
-//             } catch (err) {
-//                 console.error("Error fetching cluster data:", err);
-//                 setError("Failed to load cluster data");
-//                 setLoading(false);
-//             }
-//         };
-//         fetchClusterData();
-//     }, []);
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX ** 2);
+        const intercept = (sumY - slope * sumX) / n;
 
-//     // Data transformation for Plotly
-//     const landsizeData = clusterData.map(item => item.Landsize);
-//     const priceData = clusterData.map(item => item.Price);
-//     const bedroomData = clusterData.map(item => item.Bedroom2);
+        return x.map(xi => slope * xi + intercept); // y values of regression line
+    };
 
-//     // Log transformed data for debugging
-//     console.log("Transformed Landsize Data:", landsizeData);
-//     console.log("Transformed Price Data:", priceData);
-//     console.log("Transformed Bedroom Data:", bedroomData);
-
-//     return (
-//         <div>
-//             <h2>Data Visualizations</h2>
-//             {loading && <p>Loading...</p>}
-//             {error && <p>{error}</p>}
-//             {!loading && !error && clusterData.length > 0 ? (
-//                 <div>
-//                     {/* Scatter Plot: Landsize vs Price */}
-//                     <Plot
-//                         data={[
-//                             {
-//                                 x: landsizeData,
-//                                 y: priceData,
-//                                 mode: 'markers',
-//                                 type: 'scatter',
-//                                 marker: { color: 'blue' },
-//                                 name: 'Landsize vs Price',
-//                             },
-//                         ]}
-//                         layout={{
-//                             title: 'Scatter Plot of Landsize vs Price',
-//                             xaxis: { title: 'Landsize' },
-//                             yaxis: { title: 'Price' },
-//                             autosize: true,
-//                         }}
-//                     />
-
-//                     {/* Bar Chart: Count of Properties by Bedroom2 */}
-//                     <Plot
-//                         data={[
-//                             {
-//                                 x: bedroomData,
-//                                 type: 'histogram',
-//                                 marker: { color: 'orange' },
-//                                 name: 'Bedroom Count',
-//                             },
-//                         ]}
-//                         layout={{
-//                             title: 'Distribution of Properties by Bedroom Count',
-//                             xaxis: { title: 'Bedrooms' },
-//                             yaxis: { title: 'Count' },
-//                             autosize: true,
-//                         }}
-//                     />
-//                 </div>
-//             ) : (
-//                 !loading && !error && <p>No data available to display</p>
-//             )}
-//         </div>
-//     );
-// };
-
-// export default DataVisualization;
-
-import React, { useEffect } from 'react';
-
-const DataVisualization = () => {
-    useEffect(() => {
-        console.log("DataVisualization Component Mounted");
-    }, []);
+    const regressionLineValues = calcRegressionLine(landsizeValues, priceValues);
 
     return (
         <div>
-            <h2>Data Visualization Page</h2>
-            <p>This is where your data visualizations will appear.</p>
+            <h2>Prediction Data Visualization</h2>
+
+            {/* Scatter Plot with Regression Line: Landsize vs Predicted Price */}
+            <Plot
+                data={[
+                    {
+                        x: landsizeValues,
+                        y: priceValues,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: { color: 'blue' },
+                        name: 'Data Points',
+                    },
+                    {
+                        x: landsizeValues,
+                        y: regressionLineValues,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: { color: 'red' },
+                        name: 'Regression Line',
+                    },
+                ]}
+                layout={{
+                    title: 'Landsize vs Predicted Price with Regression Line',
+                    xaxis: { title: 'Landsize (sqm)' },
+                    yaxis: { title: 'Predicted Price ($)' },
+                }}
+            />
+
+            {/* Scatter Plot: Number of Bedrooms vs Predicted Price */}
+            <Plot
+                data={[
+                    {
+                        x: bedroomCounts,
+                        y: priceValues,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: { color: 'green' },
+                    },
+                ]}
+                layout={{
+                    title: 'Number of Bedrooms vs Predicted Price',
+                    xaxis: { title: 'Number of Bedrooms' },
+                    yaxis: { title: 'Predicted Price ($)' },
+                }}
+            />
         </div>
     );
 };
